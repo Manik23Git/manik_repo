@@ -3,6 +3,7 @@ opencv-python
 numpy
 Pillow
 PyMuPDF==1.18.19
+fitz
 Pillow
 gunicorn
 frontend
