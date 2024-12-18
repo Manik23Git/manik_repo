@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 import cv2
 import os
 import numpy as np
-import fitz  # PyMuPDF
+import pymupdf  # PyMuPDF
 from PIL import Image
 import io
 
@@ -111,7 +111,7 @@ def process_image_file(filename):
     return filename, original_params, processed_params, original_contrast_ratio, processed_contrast_ratio
 
 def process_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
+    doc = pymupdf.open(pdf_path)
     processed_pdf_path = os.path.join(app.config['PROCESSED_FOLDER'], 'processed_' + os.path.basename(pdf_path))
 
     for page_num in range(len(doc)):
@@ -147,3 +147,4 @@ def processed_file(filename):
 
 if __name__ == '__main__':
     app.run(debug=True)
+#-----------------------
