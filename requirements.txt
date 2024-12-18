@@ -5,3 +5,4 @@ fitz
 Pillow
 PyMuPDF
 Pillow
+gunicorn
