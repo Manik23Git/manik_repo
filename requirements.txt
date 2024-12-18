@@ -3,5 +3,5 @@ opencv-python
 numpy
 fitz
 Pillow
-PyMuPDF==1.18.19
-Pillow==8.2.0
+PyMuPDF
+Pillow
