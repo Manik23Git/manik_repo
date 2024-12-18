@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WCAG PDF Image Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-width: 1200px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .upload-section, .display-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .upload-section img, .display-section img {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 10px;
+            object-fit: contain;
+            border: 4px solid #007BFF;
+        }
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .custom-file-input {
+            padding: 10px;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #007BFF;
+            background-color: #fff;
+            text-align: center;
+            display: inline-block;
+            font-size: 16px;
+            width: 200px;
+            margin-bottom: 10px;
+        }
+        .custom-file-input:hover {
+            background-color: #007BFF;
+            color: #fff;
+        }
+        .custom-submit-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: #fff;
+            font-size: 16px;
+        }
+        .custom-submit-button:hover {
+            background-color: #218838;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            margin-top: 20px;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #007BFF;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+        td {
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .custom-file-input, .custom-submit-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" role="main">
+        <div class="upload-section">
+            {% if original_image_url %}
+                <img src="{{ original_image_url }}" alt="Original Image">
+                <div>
+                    <h3>Original Image Parameters</h3>
+                    <table>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                        </tr>
+                        <tr>
+                            <td>Brightness</td>
+                            <td>{{ original_params['brightness'] | round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Contrast</td>
+                            <td>{{ original_params['contrast'] | round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Sharpness</td>
+                            <td>{{ original_params['sharpness'] | round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Accessibility Score</td>
+                            <td>{{ original_score }}</td>
+                        </tr>
+                    </table>
+                </div>
+            {% endif %}
+            <div class="upload-form" id="upload-form">
+                <h2>Upload PDF file</h2>
+                <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" onsubmit="showProgressBar()">
+                    <label class="custom-file-input" for="fileInput" aria-label="Choose file">
+                        Browse
+                    </label>
+                    <input type="file" id="fileInput" name="file" accept="application/pdf" style="display: none;" onchange="updateFileName(this)">
+                    <span id="fileName" style="display: block; margin-top: 10px;"></span>
+                    <button type="submit" class="custom-submit-button" aria-label="Upload file">Upload</button>
+                </form>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+        </div>
+        <div class="display-section">
+            {% if image_url %}
+                <h2>Processed Image</h2>
+                <img src="{{ image_url }}" alt="Processed Image">
+                <div>
+                    <h3>Processed Image Parameters</h3>
+                    <table>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                        </tr>
+                        <tr>
+                            <td>Brightness</td>
+                            <td>{{ processed_params['brightness'] | round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Contrast</td>
+                            <td>{{ processed_params['contrast'] | round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Sharpness</td>
+                            <td>{{ processed_params['sharpness'] | round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Accessibility Score</td>
+                            <td>{{ processed_score }}</td>
+                        </tr>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function updateFileName(input) {
+            const fileName = input.files[0].name;
+            document.getElementById('fileName').textContent = fileName;
+        }
+
+        function showProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progressContainer = document.getElementById('progressContainer');
+            progressContainer.style.display = 'block';
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                } else {
+                    width++;
+                    progressBar.style.width = width + '%';
+                    progressBar.textContent = width + '%';
+                }
+            }, 100);
+        }
+
+        if ("{{ original_image_url }}") {
+            document.getElementById('upload-form').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
