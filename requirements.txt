@@ -1,9 +1,8 @@
 Flask
 opencv-python
 numpy
-fitz
 Pillow
-PyMuPDF
+PyMuPDF==1.18.19
 Pillow
 gunicorn
 frontend
