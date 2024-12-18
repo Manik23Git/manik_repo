@@ -2,7 +2,7 @@ Flask
 opencv-python
 numpy
 Pillow
-PyMuPDF==1.18.19
+PyMuPDF
 fitz
 Pillow
 gunicorn
