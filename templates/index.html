@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WCAG PDF Image Processor</title>
+    <title>PDF accessibility tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,6 +15,7 @@
             margin: 0;
             background-color: #f0f0f0;
         }
+
         .container {
             display: flex;
             flex-direction: column;
@@ -24,20 +26,39 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .upload-section, .display-section {
+
+        .intro-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .intro-section h1 {
+            margin: 0;
+        }
+
+        .intro-section p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .upload-section,
+        .display-section {
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-bottom: 20px;
         }
-        .upload-section img, .display-section img {
+
+        .upload-section img,
+        .display-section img {
             width: 100%;
             border-radius: 10px;
             margin-top: 10px;
             object-fit: contain;
             border: 4px solid #007BFF;
         }
+
         .upload-form {
             display: flex;
             flex-direction: column;
@@ -45,6 +66,7 @@
             margin-top: 20px;
             text-align: center;
         }
+
         .custom-file-input {
             padding: 10px;
             border: 2px solid #007BFF;
@@ -58,10 +80,12 @@
             width: 200px;
             margin-bottom: 10px;
         }
+
         .custom-file-input:hover {
             background-color: #007BFF;
             color: #fff;
         }
+
         .custom-submit-button {
             padding: 10px 20px;
             border: none;
@@ -71,9 +95,11 @@
             color: #fff;
             font-size: 16px;
         }
+
         .custom-submit-button:hover {
             background-color: #218838;
         }
+
         .progress-container {
             width: 100%;
             background-color: #f3f3f3;
@@ -83,6 +109,7 @@
             display: none;
             margin-top: 20px;
         }
+
         .progress-bar {
             width: 0;
             height: 20px;
@@ -91,19 +118,25 @@
             line-height: 20px;
             color: white;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
         }
-        table, th, td {
+
+        table,
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 8px;
         }
+
         th {
             background-color: #f2f2f2;
             text-align: center;
         }
+
         td {
             text-align: center;
         }
@@ -112,14 +145,32 @@
             .container {
                 padding: 10px;
             }
-            .custom-file-input, .custom-submit-button {
+
+            .custom-file-input,
+            .custom-submit-button {
                 width: 100%;
             }
         }
+
+        .marquee {
+            margin-bottom: 20px;
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container" role="main">
+        <div class="intro-section">
+            <h1>PDF accessibility tool</h1>
+            <p>Welcome to the PDF accessibility tool! Upload your PDF files to analyze and enhance images for better accessibility.</p>
+        </div>
+
+        <marquee class="marquee" behavior="scroll" direction="left">Upload your PDF files to improve image brightness, contrast, sharpness, and overall accessibility!</marquee>
+
         <div class="upload-section">
             {% if original_image_url %}
                 <img src="{{ original_image_url }}" alt="Original Image">
@@ -224,4 +275,5 @@
         }
     </script>
 </body>
+
 </html>
