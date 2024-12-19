@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Accessibility Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-width: 1200px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .intro-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .intro-section h1 {
+            margin: 0;
+        }
+
+        .intro-section p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .comparison-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .comparison-item {
+            flex: 1 1 45%;
+            margin: 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .comparison-item img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+            border: 4px solid #007BFF;
+        }
+
+        .comparison-item .caption {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .comparison-item .tooltip {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 100%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .comparison-item:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .custom-submit-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: #fff;
+            font-size: 16px;
+            display: block; /* Ensures the button is treated as a block element */
+            margin: 0 auto; /* Centers the button horizontally */
+        }
+
+        .custom-submit-button:hover {
+            background-color: #218838;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #007BFF;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+
+        .marquee {
+            margin-bottom: 20px;
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .comparison-item {
+                flex: 1 1 100%;
+            }
+
+            .custom-submit-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" role="main">
+        <div class="intro-section">
+            <h1>Review enhanced images extracted from Pdf uploaded earlier</h1>
+            <p>Compare the original and enhanced images below before generating your accessible PDF.</p>
+        </div>
+
+        <marquee class="marquee" behavior="scroll" direction="left">Check in preview mode below about the overall accessibility!</marquee>
+
+        <div class="comparison-section">
+            {% for original_img, processed_img, original_param, processed_param in zip(original_images, processed_images, original_params, processed_params) %}
+                <div class="comparison-item">
+                    <h3>Original Image</h3>
+                    <img src="{{ url_for('processed_file', filename=original_img) }}" alt="Original Image">
+                    <div class="caption">Brightness: {{ original_param.brightness | round(2) }} | Contrast: {{ original_param.contrast | round(2) }} | Sharpness: {{ original_param.sharpness | round(2) }}</div>
+                    <div class="tooltip">Brightness: {{ original_param.brightness | round(2) }}<br>Contrast: {{ original_param.contrast | round(2) }}<br>Sharpness: {{ original_param.sharpness | round(2) }}</div>
+                </div>
+                <div class="comparison-item">
+                    <h3>Enhanced Image</h3>
+                    <img src="{{ url_for('processed_file', filename=processed_img) }}" alt="Enhanced Image">
+                    <div class="caption">Brightness: {{ processed_param.brightness | round(2) }} | Contrast: {{ processed_param.contrast | round(2) }} | Sharpness: {{ processed_param.sharpness | round(2) }}</div>
+                    <div class="tooltip">Brightness: {{ processed_param.brightness | round(2) }}<br>Contrast: {{ processed_param.contrast | round(2) }}<br>Sharpness: {{ processed_param.sharpness | round(2) }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('confirm') }}" method="post">
+            <input type="hidden" name="pdf_path" value="{{ pdf_path }}">
+            {% for img_path in processed_images %}
+                <input type="hidden" name="processed_images" value="{{ img_path }}">
+            {% endfor %}
+            <button type="submit" class="custom-submit-button" onclick="return confirm('Are you sure you want to generate the PDF?')">Confirm and Generate PDF</button>
+        </form>
+    </div>
+
+    <script>
+        function updateFileName(input) {
+            const fileName = input.files[0].name;
+            document.getElementById('fileName').textContent = fileName;
+        }
+
+        function showProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progressContainer = document.getElementById('progressContainer');
+            progressContainer.style.display = 'block';
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                } else {
+                    width++;
+                    progressBar.style.width = width + '%';
+                    progressBar.textContent = width + '%';
+                }
+            }, 100);
+        }
+    </script>
+</body>
+
+</html>
