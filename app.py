@@ -17,6 +17,10 @@ app.config['PROCESSED_FOLDER'] = processed_folder
 os.makedirs(upload_folder, exist_ok=True)
 os.makedirs(processed_folder, exist_ok=True)
 
+@app.context_processor
+def utility_processor():
+    return dict(zip=zip)
+
 # Functions for image analysis and processing
 def calculate_brightness(image):
     return np.mean(cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:, :, 2])
@@ -28,23 +32,6 @@ def calculate_contrast(image):
 
 def calculate_sharpness(image):
     return cv2.Laplacian(image, cv2.CV_64F).var()
-
-def calculate_contrast_ratio(image):
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    min_brightness = np.min(gray_image)
-    max_brightness = np.max(gray_image)
-    contrast_ratio = (max_brightness + 0.05) / (min_brightness + 0.05)
-    return contrast_ratio
-
-def accessibility_score(contrast_ratio):
-    if contrast_ratio >= 7:
-        return "AAA"
-    elif contrast_ratio >= 4.5:
-        return "AA"
-    elif contrast_ratio >= 3:
-        return "A"
-    else:
-        return "Fail"
 
 def process_image(image):
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
@@ -72,8 +59,10 @@ def upload():
         file.save(file_path)
 
         if file.filename.lower().endswith('.pdf'):
-            processed_file_path = process_pdf(file_path)
-            return send_from_directory(app.config['PROCESSED_FOLDER'], processed_file_path)
+            original_images, processed_images, original_params, processed_params, pdf_path = process_pdf(file_path)
+            original_images = [os.path.basename(img_path) for img_path in original_images]
+            processed_images = [os.path.basename(img_path) for img_path in processed_images]
+            return render_template('review.html', original_images=original_images, processed_images=processed_images, original_params=original_params, processed_params=processed_params, pdf_path=file_path)
         else:
             processed_file_path, original_params, processed_params, original_contrast_ratio, processed_contrast_ratio = process_image_file(file.filename)
             return render_template('index.html',
@@ -95,7 +84,6 @@ def process_image_file(filename):
         'sharpness': calculate_sharpness(image)
     }
 
-    original_contrast_ratio = calculate_contrast_ratio(image)
     enhanced_image = process_image(image)
 
     processed_params = {
@@ -104,15 +92,17 @@ def process_image_file(filename):
         'sharpness': calculate_sharpness(enhanced_image)
     }
 
-    processed_contrast_ratio = calculate_contrast_ratio(enhanced_image)
     processed_file_path = os.path.join(app.config['PROCESSED_FOLDER'], filename)
     cv2.imwrite(processed_file_path, enhanced_image)
 
-    return filename, original_params, processed_params, original_contrast_ratio, processed_contrast_ratio
+    return filename, original_params, processed_params, original_params['contrast'], processed_params['contrast']
 
 def process_pdf(pdf_path):
     doc = pymupdf.open(pdf_path)
-    processed_pdf_path = os.path.join(app.config['PROCESSED_FOLDER'], 'processed_' + os.path.basename(pdf_path))
+    original_images = []
+    processed_images = []
+    original_params = []
+    processed_params = []
 
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
@@ -124,18 +114,53 @@ def process_pdf(pdf_path):
             image_bytes = base_image["image"]
 
             image = Image.open(io.BytesIO(image_bytes))
+            original_image_path = os.path.join(app.config['PROCESSED_FOLDER'], f"original_{page_num}_{img_index}.png")
+            image.save(original_image_path)
+            original_images.append(original_image_path)
+
             image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-            processed_image_cv = process_image(image_cv)
-            processed_image = Image.fromarray(cv2.cvtColor(processed_image_cv, cv2.COLOR_BGR2RGB))
+            enhanced_image_cv = process_image(image_cv)
+            processed_image = Image.fromarray(cv2.cvtColor(enhanced_image_cv, cv2.COLOR_BGR2RGB))
+            processed_image_path = os.path.join(app.config['PROCESSED_FOLDER'], f"processed_{page_num}_{img_index}.png")
+            processed_image.save(processed_image_path)
+            processed_images.append(processed_image_path)
 
-            img_buffer = io.BytesIO()
-            processed_image.save(img_buffer, format="PNG")
-            img_buffer.seek(0)
+            original_params.append({
+                'brightness': calculate_brightness(image_cv),
+                'contrast': calculate_contrast(image_cv),
+                'sharpness': calculate_sharpness(image_cv)
+            })
 
-            page.replace_image(xref, stream=img_buffer)
+            processed_params.append({
+                'brightness': calculate_brightness(enhanced_image_cv),
+                'contrast': calculate_contrast(enhanced_image_cv),
+                'sharpness': calculate_sharpness(enhanced_image_cv)
+            })
 
+    return original_images, processed_images, original_params, processed_params, pdf_path
+
+@app.route('/confirm', methods=['POST'])
+def confirm():
+    processed_images = request.form.getlist('processed_images')
+    pdf_path = request.form['pdf_path']
+
+    doc = pymupdf.open(pdf_path)
+    for page_num, img_path in enumerate(processed_images):
+        page = doc.load_page(page_num)
+        xref = page.get_images(full=True)[0][0]
+        img_path_full = os.path.join(app.config['PROCESSED_FOLDER'], img_path)
+        with open(img_path_full, 'rb') as img_file:
+            image_bytes = img_file.read()
+
+        img_buffer = io.BytesIO(image_bytes)
+        image = Image.open(img_buffer)
+        img_buffer.seek(0)
+        page.replace_image(xref, stream=img_buffer)
+
+    processed_pdf_path = os.path.join(app.config['PROCESSED_FOLDER'], 'processed_' + os.path.basename(pdf_path))
     doc.save(processed_pdf_path)
-    return 'processed_' + os.path.basename(pdf_path)
+
+    return send_from_directory(app.config['PROCESSED_FOLDER'], 'processed_' + os.path.basename(pdf_path))
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -147,4 +172,3 @@ def processed_file(filename):
 
 if __name__ == '__main__':
     app.run(debug=True)
-#-----------------------
